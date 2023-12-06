@@ -1,4 +1,4 @@
-# PlanIA
+# iacquisition
 
 # [Installation of a GPU(s) Instance based on Ubuntu 22.04 LTS](https://github.com/gdescamps/docia/blob/main/install_ubuntu_gpu_instance.md)
 
@@ -14,6 +14,6 @@
 
 # [Setup SSH on Windows 11](https://github.com/gdescamps/docia/blob/main/setup_ssh_windows11.md)
 
-# [Run Plania Web App (Streamlit)](https://github.com/gdescamps/docia/blob/main/run_plania_streamlit.md)
+# [Run Web App (Streamlit)](https://github.com/gdescamps/docia/blob/main/run_plania_streamlit.md)
 
 # [Installation of a DVC server](https://github.com/gdescamps/docia/blob/main//install_dvc_server.md)
