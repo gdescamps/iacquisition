@@ -1,0 +1,5 @@
+outs:
+- md5: a32d82924645e0369c14acaebd54bff1
+  size: 4344134690
+  hash: md5
+  path: cuda_12.2.2_535.104.05_linux.run

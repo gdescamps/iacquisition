@@ -1,0 +1,5 @@
+outs:
+- md5: 535d8cb4639959a4453cb9c965942d33
+  size: 886586362
+  hash: md5
+  path: cudnn-local-repo-ubuntu2204-8.9.6.50_1.0-1_amd64.deb

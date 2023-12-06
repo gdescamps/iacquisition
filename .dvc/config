@@ -1,0 +1,10 @@
+[core]
+    remote = storage
+    autostage = true
+[cache]
+    dir = /mnt/data/all/code/dvc-cache
+    shared = group
+    type = reflink
+['remote "storage"']
+    url = ssh://dvcserver/chanel
+
