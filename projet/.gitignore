@@ -1,4 +1,6 @@
 .virtualenvpablo/
+__pycache__/
 
 data/CV/*
 data/JobDesc/*
+data/JobDesc_text/*
