@@ -1,1 +1,4 @@
 .virtualenvpablo/
+
+data/CV/*
+data/JobDesc/*
