@@ -34,3 +34,5 @@ opencv-python==4.8.1.78
 seaborn==0.13.0
 tensorboard==2.14.0
 thop==0.1.1.post2209072238
+azure-cognitiveservices-vision-computervision
+shapely
