@@ -118,7 +118,7 @@ class JobDescDocument():
         new_bp_pattern = []
         for page, matchs in bp_pattern.items():
             for block_match in matchs:
-                __ = re.split("\*|(?<! bac) \+",block_match[1])
+                __ = re.split("- | -|\*|(?<! [bB][aA][cC]) \+",block_match[1])
                 for ___ in __:
                     if ___:
                         new_bp_pattern.append( ((int(page.split()[1]),block_match[0]),___.strip())  )
