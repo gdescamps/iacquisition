@@ -4,6 +4,7 @@ from uuid import uuid4
 import cv2
 from PIL import Image, ImageFont, ImageDraw
 from numpy import asarray
+import os 
 
 def merge_subword(word_labels, merge_factor = 6.5, pass_count=1):
 	# some constants
