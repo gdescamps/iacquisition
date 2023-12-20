@@ -1,7 +1,13 @@
 import numpy as np
+from enum import Enum
 
 
-def min(tuple1,tuple2):
+class OCR(str, Enum):
+    tesseract: str = "Tesseract"
+    azure: str = "Azure"
+
+
+def minimal_tuple(tuple1, tuple2):
     if tuple1[0] > tuple2[0]:
         return tuple2, "Profil", tuple1, "Mission"
     elif tuple2[0] > tuple1[0]:
@@ -13,7 +19,7 @@ def min(tuple1,tuple2):
             return tuple1, "Mission", tuple2, "Profil"
 
 
-def tuple_before(tuple1,tuple2):
+def tuple_before(tuple1, tuple2):
     if tuple1[0] > tuple2[0]:
         return False
     elif tuple2[0] > tuple1[0]:
