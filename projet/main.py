@@ -53,10 +53,6 @@ async def preprocess_cv(file: UploadFile = File(...)):
 
     document_cv.preprocess()
 
-    ### On retire les images numpy pour renvoyer les data via fastapi
-
-    # document_cv.remove_images()
-
     return document_cv.region_bounding_box
 
 
