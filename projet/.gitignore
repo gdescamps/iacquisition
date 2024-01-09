@@ -1,8 +1,17 @@
 .virtualenvpablo/
 __pycache__/
+storage/
+.vscode/
+
 
 data/CV/*
 data/JobDesc/*
-data/JobDesc_text/*
+data/Workday/*
+data/Text/CV/*
+data/Text/JobDesc/*
+data/Preprocessing/CV/*
+data/Preprocessing/JobDesc/*
+data/Extraction/CV/*
+data/Extraction/JobDesc/*
 
 ocr/*.json

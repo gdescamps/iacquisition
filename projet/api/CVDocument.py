@@ -21,9 +21,44 @@ def remove_greater_than_90_percent(bounding_boxes, image_area):
     return [box for i, box in enumerate(bounding_boxes) if i not in to_remove]
 
 
-def is_inside_or_overlaps_80_percent(box1, box2):
+def associate_new_region(bounding_boxes, image_shape):
+    ## Si la page ne contient qu'une seule région.
+    if len(bounding_boxes) == 1:
+        x1, y1, x1b, y1b = (
+            bounding_boxes[0][0][0],
+            bounding_boxes[0][0][1],
+            bounding_boxes[0][1][0],
+            bounding_boxes[0][1][1],
+        )
+        ## Si la région remplit 90% ou plus de l'aire de la page.
+        if (y1b - y1) * (x1b - x1) > image_shape[1] * image_shape[0] * 0.90:
+            return bounding_boxes
+        else:
+            ## Si la région prend plus de 70% de la hauteur de la page.
+            if (y1b - y1) > image_shape[0] * 0.7:
+                ## La région est sur la droite
+                if x1 > 0.4 * image_shape[1]:
+                    bounding_boxes.append(
+                        ((0, 0), (0.4 * image_shape[1], image_shape[0]))
+                    )
+                    return bounding_boxes
+                ## La région est sur la gauche
+                elif x1b < 0.6 * image_shape[1]:
+                    bounding_boxes.append(
+                        ((0.6 * image_shape[1], 0), (image_shape[1], image_shape[0]))
+                    )
+                    return bounding_boxes
+                else:
+                    return bounding_boxes
+
+    ## Si la page contient plusieurs régions. Alors la fonction renvoie l'entrée.
+    else:
+        return bounding_boxes
+
+
+def is_inside_or_overlaps_60_percent(box1, box2):
     """
-    Check if box1 is inside or overlaps 80% or more with box2 for the format ((x1, y1), (x2, y2)).
+    Check if box1 is inside or overlaps 60% or more with box2 for the format ((x1, y1), (x2, y2)).
     """
     x1, y1, x1b, y1b = box1[0][0], box1[0][1], box1[1][0], box1[1][1]
     x2, y2, x2b, y2b = box2[0][0], box2[0][1], box2[1][0], box2[1][1]
@@ -42,21 +77,20 @@ def is_inside_or_overlaps_80_percent(box1, box2):
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
     box1_area = (x1b - x1) * (y1b - y1)
 
-    # Check if box1 is inside box2 or overlaps 80% or more
-    return intersection_area >= box1_area * 0.8
+    # Check if box1 is inside box2 or overlaps 60% or more
+    return intersection_area >= box1_area * 0.6
 
 
 def remove_boxes(bounding_boxes):
     """
-    Remove bounding boxes that are inside or 80% inside other bounding boxes.
+    Remove bounding boxes that are inside or 60% inside other bounding boxes.
     Bounding boxes are in the format ((x1, y1), (x2, y2)).
     """
-    print(bounding_boxes)
     to_remove = set()
 
     for i in range(len(bounding_boxes)):
         for j in range(len(bounding_boxes)):
-            if i != j and is_inside_or_overlaps_80_percent(
+            if i != j and is_inside_or_overlaps_60_percent(
                 bounding_boxes[i], bounding_boxes[j]
             ):
                 to_remove.add(i)
@@ -118,7 +152,7 @@ class CVDocument:
                 plt.show()
         return None
 
-    def plot_region(self):
+    def plot_region(self, save: bool = False, plot: bool = False):
         colors = {
             1: {"red": (255, 0, 0)},
             2: {"green": (0, 255, 0)},
@@ -129,16 +163,36 @@ class CVDocument:
         for key, image in self.images.items():
             im2 = image.copy()
             for i, __ in enumerate(self.region_bounding_box[key]):
-                print(i)
                 rect = cv2.rectangle(
                     im2,
                     (int(__[0][0]), int(__[0][1])),
                     (int(__[1][0]), int(__[1][1])),
                     list(colors[i + 1].values())[0],
-                    4,
+                    6,
                 )
-            plt.imshow(np.asarray(im2))
-            plt.show()
+            if plot:
+                plt.imshow(np.asarray(im2))
+                plt.show()
+            else:
+                pass
+
+            if save:
+                # Create a new folder
+                main_path = os.getcwd()
+                output_path = os.path.join(main_path, "data/Preprocessing/CV")
+                if not os.path.exists(output_path):
+                    os.makedirs(output_path)
+                else:
+                    pass
+
+                output_path = os.path.join(main_path, "data/Preprocessing/CV", self.id)
+                if not os.path.exists(output_path):
+                    os.makedirs(output_path)
+                else:
+                    pass
+                Image.fromarray(np.asarray(im2)).save(
+                    os.path.join(output_path, "{}.jpg".format(key))
+                )
 
     def PreOCRProcessing(self):
         for key, image in self.images.items():
@@ -167,6 +221,10 @@ class CVDocument:
                 image_area=self.images[key].shape[0] * self.images[key].shape[1],
             )
             self.region_bounding_box[key] = remove_boxes(self.region_bounding_box[key])
+            self.region_bounding_box[key] = associate_new_region(
+                bounding_boxes=self.region_bounding_box[key],
+                image_shape=(self.images[key].shape[0], self.images[key].shape[1]),
+            )
         return None
 
     def remove_images(self):

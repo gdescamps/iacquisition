@@ -2,3 +2,4 @@ models/llava-v1.5-7b/
 venv/
 debug.py
 __pycache__/
+labelstudio/.virtualenvlabelstudio/

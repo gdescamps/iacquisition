@@ -183,8 +183,6 @@ class DocumentBlocks:
                 liste_id_to_remove.append(_.id)
             else:
                 pass
-            # self.blocks[key].remove_block()
-        print(liste_id_to_remove)
         return liste_id_to_remove
 
     def remove_block(self, liste_id_to_remove):
