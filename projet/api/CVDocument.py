@@ -235,14 +235,18 @@ class CVDocument:
             for key, image in self.images.items():
                 self.text[key] = []
                 image_ = Image.fromarray(image)
-                for bb_ in self.region_bounding_box[key]:
-                    cropped_image = image_.crop(
-                        (int(bb_[0][0]), int(bb_[0][1]), int(bb_[1][0]), int(bb_[1][1]))
-                    )
-                    extracted_text = pytesseract.image_to_string(
-                        cropped_image, config="--psm 4"
-                    )
-                    self.text[key].append(extracted_text)
+                try:
+                    for bb_ in self.region_bounding_box[key]:
+                        cropped_image = image_.crop(
+                            (int(bb_[0][0]), int(bb_[0][1]), int(bb_[1][0]), int(bb_[1][1]))
+                        )
+                        extracted_text = pytesseract.image_to_string(
+                            cropped_image, config="--psm 4"
+                        )
+                        self.text[key].append(extracted_text)
+                except TypeError:
+                    extracted_text = pytesseract.image_to_string(image_)
+                    self.text[key].append(extracted_text)                   
         else:
             pass
         return None

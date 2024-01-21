@@ -15,7 +15,8 @@ def ner_task(text):
     ner_task_text_example = os.getenv("USER_TEXT_EXAMPLE")
     ner_task_response_example = os.getenv("ASSISTANT_RESPONSE_EXAMPLE")
     response = openai.ChatCompletion.create(
-        engine="test",
+        engine="iacquisition-RH",
+        temperature=0,
         messages=[
             {"role": "system", "content": system_query},
             {
@@ -36,10 +37,8 @@ def ner_task(text):
             },
         ],
     )
-    # liste_response.append(response.choices[0].message.content.strip())
     return (
         response.choices[0]
         .message.content.encode("utf-8")
         .decode("utf-8")
-        .replace("'", '"')
     )

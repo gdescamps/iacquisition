@@ -1,10 +1,11 @@
-from fastapi import FastAPI, File, UploadFile, Query, Response
+from fastapi import FastAPI, File, UploadFile, Query, Response, HTTPException
+from fastapi.responses import PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
+
 from typing import List, Union, Optional
 import io
 from PIL import Image
 import httpx
-
-from LLM.extraction import *
 
 from api.JobDocument import *
 from api.CVDocument import *
@@ -15,15 +16,13 @@ from ocr.AzureOCR import *
 from ocr.TesseractOCR import *
 from ocr.preprocessing import *
 
-from PIL import Image
+from recherche.utils import *
 
+from LLM.embedding import *
+from LLM.extraction import *
 
-def get_image_bytes(image_path):
-    img = Image.open(image_path)
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format="JPEG")  # Or the format of your choice
-    img_byte_arr = img_byte_arr.getvalue()
-    return img_byte_arr
+import requests
+import PyPDF2
 
 
 tags_metadata = [
@@ -43,9 +42,29 @@ tags_metadata = [
         "name": "Training",
         "description": "Fonctionnalités pour entrainer un modèle custom avec Spacy.",
     },
+    {
+        "name": "Requêtes",
+        "description": "Fonctionnalités pour requêter la BDD vectorielle.",
+    },
 ]
 
+
 app = FastAPI(openapi_tags=tags_metadata)
+
+# Allow all origins (*), or specify the correct ones
+origins = [
+    "*",
+    "http://localhost:8501",  # Streamlit default port
+    "http://localhost:8000",  # FastAPI default port
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def set_key():
@@ -55,11 +74,20 @@ def set_key():
 
 set_key()
 
+@app.post("/ExtractTextWithoutOCR/", tags=["OCR"])
+async def extract_text_from_pdf_without_ocr(file: UploadFile):
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=415, detail="Unsupported file type. Please upload a PDF.")
+    
+    contents = await file.read()
+    reader = PyPDF2.PdfFileReader(io.BytesIO(contents))
+    text = ""
 
-@app.get("/get-image/")
-def get_image():
-    image_bytes = get_image_bytes("/mnt/data/greg/iacquisition/projet/VITALE_PABLO.jpg")
-    return Response(content=image_bytes, media_type="image/JPEG")
+    for page_num in range(reader.numPages):
+        page = reader.getPage(page_num)
+        text += page.extractText()
+
+    return {"Texte" : text}
 
 
 @app.post("/TesseractOCR/", tags=["OCR"])
@@ -76,7 +104,7 @@ def azure_ocr(file: UploadFile = File(...)):
 
     return get_ocr_azure_with_regions(
         endpoint=endpoint, key=subscription_key, byte=bytes
-    )
+    ) 
 
 
 @app.post("/PreprocessCV/", tags=["OCR"])
@@ -136,7 +164,17 @@ async def cv_extraction_llm(file: UploadFile = File(...), ocr: OCR = OCR.tessera
             res[page] = {}
             for id_block, text_block in enumerate(textes):
                 extraction_ = ner_task(text=text_block)
-                res[page][id_block + 1] = json.loads(extraction_)
+                try:
+                    res[page][id_block + 1] = eval(extraction_)
+                except SyntaxError as e:
+                    msg = str(e)
+                    if msg.startswith('unterminated'):
+                        print('Problème lié au fait que le texte est de mauvaise qualité')
+                    elif msg.startswith('closing '):
+                        print(msg)
+                    elif msg.startswith('invalid syntax.'):
+                        print(msg)
+                    continue
 
         with open(
             os.path.join(output_path, file.filename.split(".")[0] + ".json"), "w"
@@ -176,3 +214,14 @@ def jobdesc_extraction(file: UploadFile = File(...), ocr: OCR = OCR.tesseract):
         # document.extraction_formulaire_azure()
 
     return document.entities
+
+@app.post("/Requete_BDD/", tags=["Requêtes"])
+def requete_simple(queries:List[str], collection_name: Collection = Collection.Responsibilities, n_results: int=20, top_n: int=3):
+    final_df = query_collection(queries, collection_name=collection_name.value, n_results=top_n)
+    if type(final_df) == pd.DataFrame:
+        final_dict = process_dataframe_get_top(final_df,top_n)
+        explicability_dict=explicability(final_df,final_dict)
+        combined_json = {"final_dict": final_dict, "explicability_dict": explicability_dict}
+        return combined_json
+    else:
+        return None
