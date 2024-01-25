@@ -1,6 +1,0 @@
-[submodule "doc"]
-	path = doc
-	url = git@github.com:gdescamps/docia.git
-[submodule "llava"]
-	path = llava
-	url = git@github.com:gdescamps/LLaVa.git
