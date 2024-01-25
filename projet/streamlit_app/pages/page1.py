@@ -3,10 +3,11 @@ from st_pages import Page, Section, show_pages, add_page_title
 import tempfile
 import base64
 import requests
-import os 
+import os
 import fitz
 from PIL import Image
 import io
+
 
 # Function to convert PDF file pages to images
 def convert_pdf_to_images(uploaded_file):
@@ -21,23 +22,25 @@ def convert_pdf_to_images(uploaded_file):
             images.append(img)
     return images
 
+
 # Function to send extraction request
 def send_extraction_request(file_path, filename, file_type):
     try:
         with open(file_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+            base64_pdf = base64.b64encode(f.read()).decode("utf-8")
             file_content = base64_pdf
             response = send_extraction_cv_request(filename, file_content, file_type)
-            
+
             if response.status_code == 200:
-                st.session_state['page1_response_data'] = response.json()
+                st.session_state["page1_response_data"] = response.json()
             else:
                 pass
-                #st.error("Failed to extract data from CV.")
+                # st.error("Failed to extract data from CV.")
     except Exception as e:
         pass
-        #st.error(f"An error occurred: {e}")
-            
+        # st.error(f"An error occurred: {e}")
+
+
 # Function to handle file upload and processing
 def handle_file_upload(uploaded_file):
     if uploaded_file is not None:
@@ -49,7 +52,7 @@ def handle_file_upload(uploaded_file):
         # Convert PDF to list of images
         with open(temp_file_path, "rb") as f:
             images = convert_pdf_to_images(f)
-        
+
         # Reset session state
         st.session_state.images = images
         st.session_state.page_num = 0
@@ -57,55 +60,77 @@ def handle_file_upload(uploaded_file):
         # Trigger extraction (make sure this is the last step after all processing is done)
         filename = uploaded_file.name
         file_type = uploaded_file.type
-        send_extraction_request(temp_file_path, filename, file_type)    
+        send_extraction_request(temp_file_path, filename, file_type)
+
 
 @st.cache_data
 def send_extraction_cv_request(filename, file_content, file_type):
-    files = {'file': (filename, file_content, file_type)}
-    headers = {'accept': 'application/json'}
-    params = {'ocr': 'Tesseract'}
-    response = requests.post('http://127.0.0.1:8000/CVExtractionLLM/', params=params, headers=headers, files=files)
+    files = {"file": (filename, file_content, file_type)}
+    headers = {"accept": "application/json"}
+    params = {"ocr": "Tesseract"}
+    response = requests.post(
+        "http://127.0.0.1:8000/CVExtractionLLM/",
+        params=params,
+        headers=headers,
+        files=files,
+    )
     return response
+
 
 st.set_page_config(layout="wide")
 
-st.title('Traitement des CVs')
+st.title("Traitement des CVs")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    uploaded_file_page1 = st.file_uploader("Upload a PDF file", type="pdf",
-                                 on_change=lambda: handle_file_upload(st.session_state['file_uploader']),
-                                 key="file_uploader")
-    
-    if 'images' not in st.session_state:
+    uploaded_file_page1 = st.file_uploader(
+        "Upload a PDF file",
+        type="pdf",
+        on_change=lambda: handle_file_upload(st.session_state["file_uploader"]),
+        key="file_uploader",
+    )
+
+    if "images" not in st.session_state:
         st.session_state.images = []
 
-    if 'page_num' not in st.session_state:
+    if "page_num" not in st.session_state:
         st.session_state.page_num = 0
-        
+
     if st.session_state.images:
-        st.session_state['page1_response_data'] = None
+        st.session_state["page1_response_data"] = None
         # Display current page image
-        st.image(st.session_state.images[st.session_state.page_num], use_column_width=True)
+        st.image(
+            st.session_state.images[st.session_state.page_num], use_column_width=True
+        )
 
         # Navigation buttons
         col11, col12 = st.columns(2)
         with col11:
-            if st.button('Previous page'):
+            if st.button("Previous page"):
                 if st.session_state.page_num > 0:
                     st.session_state.page_num -= 1
         with col12:
-            if st.button('Next page'):
+            if st.button("Next page"):
                 if st.session_state.page_num < len(st.session_state.images) - 1:
                     st.session_state.page_num += 1
 
 with col2:
-    if uploaded_file_page1 is not None and st.session_state.get('page1_response_data') is None:
-        response = send_extraction_cv_request(filename=uploaded_file_page1.name, file_content=uploaded_file_page1, file_type=uploaded_file_page1.type)
-            
+    if (
+        uploaded_file_page1 is not None
+        and st.session_state.get("page1_response_data") is None
+    ):
+        response = send_extraction_cv_request(
+            filename=uploaded_file_page1.name,
+            file_content=uploaded_file_page1,
+            file_type=uploaded_file_page1.type,
+        )
+
         if response.status_code == 200:
-            st.session_state['page1_response_data'] = response.json()
-            
-    if 'page1_response_data' in st.session_state and st.session_state['page1_response_data'] is not None:
-        st.write(st.session_state['page1_response_data'])
+            st.session_state["page1_response_data"] = response.json()
+
+    if (
+        "page1_response_data" in st.session_state
+        and st.session_state["page1_response_data"] is not None
+    ):
+        st.write(st.session_state["page1_response_data"])

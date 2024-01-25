@@ -74,11 +74,14 @@ def set_key():
 
 set_key()
 
+
 @app.post("/ExtractTextWithoutOCR/", tags=["OCR"])
 async def extract_text_from_pdf_without_ocr(file: UploadFile):
     if file.content_type != "application/pdf":
-        raise HTTPException(status_code=415, detail="Unsupported file type. Please upload a PDF.")
-    
+        raise HTTPException(
+            status_code=415, detail="Unsupported file type. Please upload a PDF."
+        )
+
     contents = await file.read()
     reader = PyPDF2.PdfFileReader(io.BytesIO(contents))
     text = ""
@@ -87,7 +90,7 @@ async def extract_text_from_pdf_without_ocr(file: UploadFile):
         page = reader.getPage(page_num)
         text += page.extractText()
 
-    return {"Texte" : text}
+    return {"Texte": text}
 
 
 @app.post("/TesseractOCR/", tags=["OCR"])
@@ -104,7 +107,7 @@ def azure_ocr(file: UploadFile = File(...)):
 
     return get_ocr_azure_with_regions(
         endpoint=endpoint, key=subscription_key, byte=bytes
-    ) 
+    )
 
 
 @app.post("/PreprocessCV/", tags=["OCR"])
@@ -168,11 +171,13 @@ async def cv_extraction_llm(file: UploadFile = File(...), ocr: OCR = OCR.tessera
                     res[page][id_block + 1] = eval(extraction_)
                 except SyntaxError as e:
                     msg = str(e)
-                    if msg.startswith('unterminated'):
-                        print('Problème lié au fait que le texte est de mauvaise qualité')
-                    elif msg.startswith('closing '):
+                    if msg.startswith("unterminated"):
+                        print(
+                            "Problème lié au fait que le texte est de mauvaise qualité"
+                        )
+                    elif msg.startswith("closing "):
                         print(msg)
-                    elif msg.startswith('invalid syntax.'):
+                    elif msg.startswith("invalid syntax."):
                         print(msg)
                     continue
 
@@ -215,13 +220,24 @@ def jobdesc_extraction(file: UploadFile = File(...), ocr: OCR = OCR.tesseract):
 
     return document.entities
 
+
 @app.post("/Requete_BDD/", tags=["Requêtes"])
-def requete_simple(queries:List[str], collection_name: Collection = Collection.Responsibilities, n_results: int=20, top_n: int=3):
-    final_df = query_collection(queries, collection_name=collection_name.value, n_results=top_n)
+def requete_simple(
+    queries: List[str],
+    collection_name: Collection = Collection.Responsibilities,
+    n_results: int = 20,
+    top_n: int = 3,
+):
+    final_df = query_collection(
+        queries, collection_name=collection_name.value, n_results=top_n
+    )
     if type(final_df) == pd.DataFrame:
-        final_dict = process_dataframe_get_top(final_df,top_n)
-        explicability_dict=explicability(final_df,final_dict)
-        combined_json = {"final_dict": final_dict, "explicability_dict": explicability_dict}
+        final_dict = process_dataframe_get_top(final_df, top_n)
+        explicability_dict = explicability(final_df, final_dict)
+        combined_json = {
+            "final_dict": final_dict,
+            "explicability_dict": explicability_dict,
+        }
         return combined_json
     else:
         return None
