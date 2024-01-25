@@ -6,5 +6,5 @@ cd projet
 pip install -r requirements.txt
 
 # Start Gunicorn with Uvicorn workers
-#gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --preload
-uvicorn main:app --port 8000
+gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --preload
+#uvicorn main:app --port 8000
