@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+projet/.virtualenvpablo/
+projet/__pycache__/
+projet/.vscode/
+projet/streamlit_app/
+*.ipynb

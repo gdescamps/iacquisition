@@ -218,6 +218,8 @@ def jobdesc_extraction(file: UploadFile = File(...), ocr: OCR = OCR.tesseract):
         document.extraction_azure()
         # document.extraction_formulaire_azure()
 
+    # res = json.dumps(document.entities)
+    # return res
     return document.entities
 
 
