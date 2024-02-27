@@ -11,9 +11,125 @@ import io
 import tempfile
 import json
 
+
+header_style = """
+<style>
+div.stButton > button:first-child {
+    display: none;
+}
+.header {
+    color: white;
+    padding: 10px;
+    font-size: 25px;
+    text-align: center;
+    background-color: black;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+div.stBox {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+}
+</style>
+"""
+
+sidebar_style = """
+<style>
+/* Targeting the sidebar with data-testid attribute */
+[data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
+    background-color: black;
+}
+/* Changing the color of all text inside the sidebar */
+[data-testid="stSidebar"][aria-expanded="true"] > div:first-child * {
+    color: white;
+}
+/* Customizing buttons to appear with white background and black text */
+[data-testid="stSidebar"] .stButton > button {
+    background-color: white !important;
+    color: black !important;
+    border: 1px solid #eee !important;
+    border-radius: 4px !important;
+    padding: 8px 16px !important;
+    margin: 5px 0 !important;
+    width: 100%;
+    display: block;
+}
+/* Hover effect for buttons */
+[data-testid="stSidebar"] .stButton > button:hover {
+    background-color: #f2f2f2 !important;
+    color: black !important;
+}
+</style>
+"""
+
+# Custom CSS to inject
+image_style = """
+<style>
+.image-container {
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+    margin-bottom: 15px;
+}
+
+.image-container:hover {
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+img {
+    border-radius: 5px;
+}
+</style>
+"""
+
+sidebar_title = """
+<style>
+.st-emotion-cache-1l23ect p {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 26px;
+    text-align: center;
+}
+</style>
+"""
+
 st.set_page_config(layout="wide")
 
-st.title("Chatbot Fiche de poste CV")
+# Write styles to the app
+st.markdown(header_style, unsafe_allow_html=True)
+st.markdown(sidebar_style, unsafe_allow_html=True)
+st.markdown(image_style, unsafe_allow_html=True)
+st.markdown(sidebar_title, unsafe_allow_html=True)
+
+
+# Function to encode image to base64
+@st.cache_data
+def get_image_base64(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+
+# Encode your image
+image_base64 = get_image_base64(
+    "/home/pablo/data/iacquisition/projet/streamlit_app/logo.jpg"
+)
+image_size = 300  # Change this value to the desired size
+
+# Use HTML to center the image and control its size
+st.markdown(
+    f"""
+    <div style="text-align: center;">
+        <img src="data:image/png;base64,{image_base64}" width="{image_size}px" class="centered"/>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown('<div class="header"> IACQUISITION  CHATBOT</div>', unsafe_allow_html=True)
 
 
 # Define a function to reset the session states
@@ -192,7 +308,9 @@ def launch_ocr_request_jobdesc(filename, file_content, file_type):
     files = {"file": (filename, file_content, file_type)}
     headers = {"accept": "application/json"}
     response = requests.post(
-        "http://127.0.0.1:8000/TesseractOCR/", headers=headers, files=files
+        "http://127.0.0.1:8000/TesseractOCR/",
+        headers=headers,
+        files=files,
     )
     res = ""
     for keys in response.json().keys():

@@ -16,6 +16,7 @@ show_pages(
         Page("pages/page3.py", "Matching Fiche de poste CV"),
         Page("pages/page4.py", "Chatbot Fiche de poste"),
         Page("pages/page5.py", "Chatbot Fiche de poste CV"),
-        Page("pages/page6.py", "Générateur de questions"),
+        Page("pages/page6.py", "Assistant Entretien"),
+        Page("pages/page7.py", "Tests"),
     ]
 )

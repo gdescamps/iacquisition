@@ -351,3 +351,134 @@ def embed_document(
                 ],
             )
     return None
+
+
+def question_generation(fiche_de_poste_data):
+    dotenv.load_dotenv()
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    openai.api_base = os.getenv("OPENAI_API_ENDPOINT")
+    openai.api_type = os.getenv("OPENAI_API_TYPE")
+    openai.api_version = os.getenv("OPENAI_API_VERSION")
+
+    system_query = os.getenv("GENERATEUR_QUESTION_SYSTEM_KNOWLEDGE")
+    fiche_de_poste_data_example = '{"Missions":["Piloter nos activités R&D de l\'équipe IA.","Encadrer une équipe existante composée de data scientists et de data engineers.","Collaborer au développement de nouveaux outils d\'IA.","Recueil de besoin auprès des équipes métiers et constitution d\'une roadmap.","Participer a la veille technologique dans le domaine de l\'IA."],"Profil":["Etudiant(e) en informatique, statistiques, ou domaine connexe.","Connaissances solides en développement logiciel et en déploiement d\'applications.","Compréhension approfondie des principes de machine learning, deep learning et MLOps.","Expérience avec des outils cloud tels que AWS ou Azure.","Maitrise des concepts MLOps et expérience pratique avec des outils comme Docker, Kubernetes, Jenkins, etc.","Capacité a travailler en équipe et a communiquer efficacement.","Passionné(e) par le machine learning et le développement logiciel de manière globale.","Autonome, curieux(se) et capable de s\'adapter rapidement a de nouveaux environnements.","Bonne maitrise du français et de l\'anglais (écrit et oral)."],"Compétences":["CI/CD","AWS","Azure","Jenkins","Kubernetes","Docker","NLP","MLOps","Machine Learning","Deep Learning"]}'
+    resultats_example = """Question 1:\n\nAvez-vous déjà eu l'occasion de manager une équipe de développeurs dans votre carrière? Si oui, donnez-nous un exemple en précisant le contexte technique du projet, et également votre méthodologie.\n\nRéponse attendue 1:\n\nJ'ai eu l'occasion de piloter une équipe de 3 data scientists sur un projet de développement d'un outil de traitement de documents à l'aide de Machine Learning. J'ai tout d'abord structurer le besoin avec les parties prenantes du projet en réalisant plusieurs ateliers. Un POC a été réalisé en 2 mois en collaboration avec mon équipe grâce à une méthologie AGILE tout au long des développements. Ici le candidat répond à la question en citant des outils et des méthodes fréquemment utilisés dans le domaine de l'IA.\n\nQuestion 2:\n\nAvez-vous eu l'occasion de travailler avec Docker? Si oui, citez une expérience personnelle et expliquez le contexte.\n\nRéponse attendue 2:\n\nDocker me permet de containeuriser mes applications comme des APIs par exemple et de les déployer facilement sur une instance distante EC2 par exemple pour les rendre accessibles aux utilisateurs finaux. Ici, le candidat montre qu'il a l'habitude de travailler avec Docker en donnant la raison.\n\nQuestion 3:\n\nVous connaissez l'éco-système Azure? Pour déployer une image Docker sur Azure, Que feriez-vous?\n\nRéponse attendue 3:\n\nOui, je connais Azure. Sur Azure, il existe plusieurs solutions pour déployer une application dockerisée; par exemple on peut utiliser les services ACR pour stocker les images docker et ACI pour déployer une image sur une instance privée. Ici, le candidat nous donne une solution pertinente."""
+    response = openai.ChatCompletion.create(
+        engine="iacquisition-RH",
+        # temperature=5,
+        messages=[
+            {"role": "system", "content": system_query},
+            {
+                "role": "user",
+                "content": "Voici le contenu de la fiche de poste pour lequel tu dois imaginer 5 questions pertinentes selon la tâche définie plus haut. Pour chaque question génère également la réponse idéale attendue : {}".format(
+                    fiche_de_poste_data_example
+                ),
+            },
+            {
+                "role": "assistant",
+                "content": "{}".format(resultats_example),
+            },
+            {
+                "role": "user",
+                "content": "Voici encore le contenu d'une nouvelle fiche de poste pour lequel tu dois imaginer 5 questions pertinentes selon la tâche définie plus haut. Pour chaque question génère également la réponse idéale attendue : {}".format(
+                    fiche_de_poste_data
+                ),
+            },
+        ],
+    )
+    return response.choices[0].message.content.encode("utf-8").decode("utf-8")
+
+
+def use_case_generation(text):
+    dotenv.load_dotenv()
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    openai.api_base = os.getenv("OPENAI_API_ENDPOINT")
+    openai.api_type = os.getenv("OPENAI_API_TYPE")
+    openai.api_version = os.getenv("OPENAI_API_VERSION")
+
+    system_query = os.getenv("GENERATEUR_USE_CASE_SYSTEM_KNOWLEDGE")
+
+    job_example = "Data Science"
+    use_case_example = os.getenv("USE_CASE_EXAMPLE")
+    use_case_example = """Contexte:\n\nLes équipes RH souhaitent améliorer leur processus de recrutement. Pour y parvenir, nous souhaitons créer un outil basé sur l'IA qui associe les CV aux descriptions de poste. Cet outil permettrait de réactiver de manière pertinente les candidats inscrits dans la base de données.\n\nQuestion 1:\n\nComment le projet doit-il être structuré ?\n\nQuestion 2:\n\nProposer une approche pour extraire automatiquement des informations d'un CV.\n\nQuestion 3:\n\nProposer une approche pour suggérer les 10 meilleures correspondances CV/description de poste."""
+    response = openai.ChatCompletion.create(
+        engine="iacquisition-RH",
+        temperature=0,
+        messages=[
+            {"role": "system", "content": system_query},
+            {
+                "role": "user",
+                "content": "Voici le métier pour lequel tu dois imaginer un cas d'usage: {}".format(
+                    job_example
+                ),
+            },
+            {
+                "role": "assistant",
+                "content": "{}".format(use_case_example),
+            },
+            {
+                "role": "user",
+                "content": "Voici un nouveau métier pour lequel tu dois imaginer un cas d'usage :{}".format(
+                    text
+                ),
+            },
+        ],
+    )
+    return response.choices[0].message.content.encode("utf-8").decode("utf-8")
+
+
+# def split_question_generated(text):
+#    sections = re.split(r"(Question \d+:|Réponse attendue \d+:)", text)
+#    qa_dict = {}
+#    for i in range(1, len(sections), 2):
+#        key = sections[i].strip()
+#        value = sections[i + 1].strip()
+#        qa_dict[key] = value
+#    qa_dict_no_colon = {key.rstrip(":"): value for key, value in qa_dict.items()}
+#    return qa_dict_no_colon
+
+
+def split_question_generated(text):
+    # Adjust the regular expression to allow for variable whitespace and line breaks
+    # This regular expression looks for the words 'Contexte' or 'Question', followed by any number of spaces,
+    # possibly some digits, then a colon, and any amount of whitespace including newlines.
+    pattern = r"(Question\s*\d+\s*:)|(Réponse attendue\s*\d+\s*:)"
+    sections = re.split(pattern, text, flags=re.MULTILINE)
+
+    # Filter out None and empty strings that might be produced by re.split
+    sections = [section for section in sections if section and not section.isspace()]
+
+    qa_dict = {}
+    current_key = None
+    for section in sections:
+        if re.match(pattern, section):
+            # Normalize the key by removing newlines and extra spaces, and adding the missed colon back
+            current_key = re.sub(r"\s+", " ", section).strip() + " "
+        else:
+            if current_key:
+                qa_dict[current_key] = section.strip()
+
+    return qa_dict
+
+
+def split_usecase_generated(text):
+    # Adjust the regular expression to allow for variable whitespace and line breaks
+    # This regular expression looks for the words 'Contexte' or 'Question', followed by any number of spaces,
+    # possibly some digits, then a colon, and any amount of whitespace including newlines.
+    pattern = r"(Contexte\s*:)|(Question\s*\d+\s*:)"
+    sections = re.split(pattern, text, flags=re.MULTILINE)
+
+    # Filter out None and empty strings that might be produced by re.split
+    sections = [section for section in sections if section and not section.isspace()]
+
+    qa_dict = {}
+    current_key = None
+    for section in sections:
+        if re.match(pattern, section):
+            # Normalize the key by removing newlines and extra spaces, and adding the missed colon back
+            current_key = re.sub(r"\s+", " ", section).strip() + " "
+        else:
+            if current_key:
+                qa_dict[current_key] = section.strip()
+
+    return qa_dict

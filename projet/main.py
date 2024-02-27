@@ -191,6 +191,28 @@ async def cv_extraction_llm(file: UploadFile = File(...), ocr: OCR = OCR.tessera
         return {"Erreur": "Erreur dans l'appel du endpoint TesseractOCRCV"}
 
 
+@app.post("/JobDescExtractionLLM/", tags=["Extraction"])
+def jobdesc_extraction(file: UploadFile = File(...), ocr: OCR = OCR.tesseract):
+    bytes = file.file.read()
+    resultat_ocr = get_ocr_tesseract(byte=bytes, output="data.frame")
+    document = JobDescDocument()
+    document.nb_pages = len(resultat_ocr)
+    document.id = file.filename
+    document.pages_content = resultat_ocr
+    document.postprocess_ocr()
+
+    full_text = ""
+
+    for page, page_content in document.pages_content.items():
+        page_text = " ".join(list(document.pages_content[page]["text"].values))
+        if full_text:
+            full_text = full_text + " " + page_text
+        else:
+            full_text = page_text
+    final_res = ner_task_jobdesc(full_text)
+    return final_res
+
+
 @app.post("/JobDescExtraction/", tags=["Extraction"])
 def jobdesc_extraction(file: UploadFile = File(...), ocr: OCR = OCR.tesseract):
     bytes = file.file.read()

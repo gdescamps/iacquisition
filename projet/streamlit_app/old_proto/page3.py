@@ -269,9 +269,9 @@ if st.button("Recherche"):
     )
 
     st.session_state["page3_dict_responsibilities"] = dict_responsibilities
-    st.session_state[
-        "page3_explicability_responsibilities"
-    ] = explicability_responsibilities
+    st.session_state["page3_explicability_responsibilities"] = (
+        explicability_responsibilities
+    )
     st.session_state["page3_dict_skills"] = dict_skills
     st.session_state["page3_explicability_skills"] = explicability_skills
 

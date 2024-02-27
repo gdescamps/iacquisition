@@ -89,7 +89,9 @@ def launch_ocr_request(filename, file_content, file_type):
     files = {"file": (filename, file_content, file_type)}
     headers = {"accept": "application/json"}
     response = requests.post(
-        "http://127.0.0.1:8000/TesseractOCR/", headers=headers, files=files
+        "http://127.0.0.1:8000/TesseractOCR/",
+        headers=headers,
+        files=files,
     )
     res = ""
     for keys in response.json().keys():

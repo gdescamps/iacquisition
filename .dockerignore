@@ -7,5 +7,4 @@ __pycache__/
 projet/.virtualenvpablo/
 projet/__pycache__/
 projet/.vscode/
-projet/streamlit_app/
 *.ipynb

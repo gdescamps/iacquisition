@@ -4,3 +4,4 @@ debug.py
 __pycache__/
 labelstudio/.virtualenvlabelstudio/
 projet/.virtualenvpablo/
+.history/

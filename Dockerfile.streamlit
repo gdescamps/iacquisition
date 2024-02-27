@@ -1,0 +1,41 @@
+# Use an official Python runtime as a parent image
+FROM python:3.10.12-slim-buster
+
+# Set the working directory in the container
+WORKDIR /usr/src/app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3-venv \
+    libgl1 \
+    poppler-utils \
+    libleptonica-dev \
+    tesseract-ocr \
+    tesseract-ocr-fra \
+    libtesseract-dev \
+    python3-pil \
+    tesseract-ocr-eng \
+    tesseract-ocr-script-latn \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the current directory contents into the container at /usr/src/app
+COPY ./projet .
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Modify the __init__.py script within the chromadb installed library
+RUN sed -i '1 a import sys\nsys.modules["sqlite3"] = sys.modules.pop("pysqlite3")' /usr/local/lib/python3.10/site-packages/chromadb/__init__.py
+RUN sed -i '1 a __import__("pysqlite3")' /usr/local/lib/python3.10/site-packages/chromadb/__init__.py
+
+# Go to Streamli App folder
+WORKDIR /usr/src/app/streamlit_app
+
+# Make port 80 available to the world outside this container
+EXPOSE 8501
+
+# Define environment variable
+ENV NAME World
+
+# Run app.py when the container launches
+CMD ["streamlit", "run", "home.py","--server.address", "0.0.0.0", "--server.port", "8501"]
