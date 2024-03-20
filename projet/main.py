@@ -129,7 +129,7 @@ async def preprocess_cv(file: UploadFile = File(...), save: bool = False):
 
 
 @app.post("/TesseractOCRCV/", tags=["OCR"])
-async def tesseract_ocr_cv(file: UploadFile = File(...)):
+def tesseract_ocr_cv(file: UploadFile = File(...)):
     bytes = file.file.read()
     document_cv = CVDocument()
 
@@ -141,54 +141,132 @@ async def tesseract_ocr_cv(file: UploadFile = File(...)):
     document_cv.PreOCRProcessing()
 
     document_cv.ocr(ocr_engine="tesseract")
-
+    print(type(document_cv.text))
     return document_cv.text
 
 
 @app.post("/CVExtractionLLM/", tags=["Extraction"])
-async def cv_extraction_llm(file: UploadFile = File(...), ocr: OCR = OCR.tesseract):
+def cv_extraction_llm(file: UploadFile = File(...), ocr: OCR = OCR.tesseract):
+    bytes = file.file.read()
+    document_cv = CVDocument()
+
+    liste_page_content = convert_from_bytes(bytes)
+    for i in range(len(liste_page_content)):
+        img_ = np.asarray(liste_page_content[i])
+        document_cv.images["Page " + str(i + 1)] = img_
+
+    document_cv.PreOCRProcessing()
+
+    document_cv.ocr(ocr_engine="tesseract")
     res = {}
-    async with httpx.AsyncClient() as client:
-        files = {"file": (file.filename, file.file, file.content_type)}
-        response = await client.post(
-            "http://127.0.0.1:8000/TesseractOCRCV/", files=files
-        )
-    # Si la réponse est valide
-    if response.status_code == 200:
-        ## Création du dossier qui contient les sorties d'extractions.
-        main_path = os.getcwd()
-        output_path = os.path.join(main_path, "data/Extraction/CV")
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
+
+    ## Création du dossier qui contient les sorties d'extractions.
+    main_path = os.getcwd()
+    output_path = os.path.join(main_path, "data/Extraction/CV")
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    else:
+        pass
+
+    for page, textes in document_cv.text.items():
+        res[page] = {}
+        for id_block, text_block in enumerate(textes):
+            extraction_ = ner_task(text=text_block)
+            try:
+                res[page][id_block + 1] = eval(extraction_)
+            except SyntaxError as e:
+                msg = str(e)
+                if msg.startswith("unterminated"):
+                    print("Problème lié au fait que le texte est de mauvaise qualité")
+                elif msg.startswith("closing "):
+                    print(msg)
+                elif msg.startswith("invalid syntax."):
+                    print(msg)
+                continue
+
+    with open(
+        os.path.join(output_path, file.filename.split(".")[0] + ".json"), "w"
+    ) as outfile:
+        json.dump(res, outfile, indent=4)
+    return res
+
+
+# Endpoint to upload the PDF and process it.
+@app.post("/CVExtractionLLM_GPT4/", tags=["Extraction"])
+def cv_extraction_llm_gpt4(pdf_file: UploadFile = File(...)):
+    res = {}
+    pdf_bytes = pdf_file.file.read()
+    # Convert PDF pages to images
+    images = convert_from_bytes(pdf_bytes)
+
+    # Process each image
+    for i, image in enumerate(images):
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format="PNG")
+        image_bytes = img_byte_arr.getvalue()
+        image_name = f"page_{i}.png"
+        data_url = image_to_data_url(image_bytes, image_name)
+        res_page = ner_task_gpt4vision(data_url)
+        res["Page " + str(i + 1)] = res_page
+    return res
+
+
+# Endpoint to upload the PDF and process it.
+@app.post("/JobDescExtractionLLM_GPT4/", tags=["Extraction"])
+def cv_extraction_llm_gpt4(pdf_file: UploadFile = File(...)):
+    res = {}
+    pdf_bytes = pdf_file.file.read()
+    # Convert PDF pages to images
+    images = convert_from_bytes(pdf_bytes)
+
+    final_dict_results = {
+        "Nom du poste": "",
+        "Missions": [],
+        "Compétences": [],
+        "Aptitudes": [],
+    }
+    # Process each image
+    for i, image in enumerate(images):
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format="PNG")
+        image_bytes = img_byte_arr.getvalue()
+        image_name = f"page_{i}.png"
+        data_url = image_to_data_url(image_bytes, image_name)
+        res_page = ner_task_gpt4vision_jobdesc(data_url)
+        res["Page " + str(i + 1)] = res_page
+    try:
+        if res["Page 1"]["Nom du poste"]:
+            final_dict_results["Nom du poste"] = res["Page 1"]["Nom du poste"]
         else:
             pass
+    except:
+        pass
 
-        for page, textes in response.json().items():
-            res[page] = {}
-            for id_block, text_block in enumerate(textes):
-                extraction_ = ner_task(text=text_block)
-                try:
-                    res[page][id_block + 1] = eval(extraction_)
-                except SyntaxError as e:
-                    msg = str(e)
-                    if msg.startswith("unterminated"):
-                        print(
-                            "Problème lié au fait que le texte est de mauvaise qualité"
-                        )
-                    elif msg.startswith("closing "):
-                        print(msg)
-                    elif msg.startswith("invalid syntax."):
-                        print(msg)
-                    continue
+    for page, infos in res.items():
+        try:
+            if infos["Compétences"]:
+                for competences_ in infos["Compétences"]:
+                    final_dict_results["Compétences"].append(competences_)
+        except:
+            pass
+    for page, infos in res.items():
+        try:
+            if infos["Missions"]:
+                for missions_ in infos["Missions"]:
+                    final_dict_results["Missions"].append(missions_)
+        except:
+            pass
 
-        with open(
-            os.path.join(output_path, file.filename.split(".")[0] + ".json"), "w"
-        ) as outfile:
-            json.dump(res, outfile, indent=4)
-        return res
-    # Erreur dans l'appel du endpoint TesseractOCRCV
-    else:
-        return {"Erreur": "Erreur dans l'appel du endpoint TesseractOCRCV"}
+    for page, infos in res.items():
+        try:
+            if infos["Aptitudes"]:
+                for aptitudes_ in infos["Aptitudes"]:
+                    final_dict_results["Aptitudes"].append(aptitudes_)
+        except:
+            pass
+    return final_dict_results
+
+    return res
 
 
 @app.post("/JobDescExtractionLLM/", tags=["Extraction"])
